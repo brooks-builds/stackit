@@ -2,11 +2,13 @@ const webSocket = new WebSocket("ws://localhost:8080");
 let worldUnitSize = 30;
 let boxDropper;
 const boxes = [];
+let platform;
 
 function setup() {
   createCanvas(1920, 1080);
 
   boxDropper = new BoxDropper();
+  platform = new Platform();
   webSocket.onmessage = (event) =>
     boxes.push(new Box(boxDropper.location.copy(), boxDropper.velocity.copy()));
 }
@@ -20,7 +22,8 @@ function draw() {
   // draw all the things
   drawBackground();
   boxes.forEach((box) => box.render());
-  boxDropper.draw();
+  boxDropper.render();
+  platform.render();
 }
 
 function drawBackground() {

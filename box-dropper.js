@@ -6,7 +6,7 @@ class BoxDropper {
     this.velocity = createVector(5, 0);
   }
 
-  draw() {
+  render() {
     fill(this.color);
     rect(this.location.x, this.location.y, this.size, this.size);
   }
