@@ -5,9 +5,8 @@ class Box {
     this.velocity.y = 2;
     this.color = color(usersColor);
     this.size = worldUnitSize;
-    this.isFalling = true;
     this.username = username;
-    this.points = 1;
+    this.isLanded = false;
   }
 
   render() {
@@ -16,12 +15,10 @@ class Box {
   }
 
   update() {
-    if (this.isFalling) {
-      this.location.add(this.velocity);
+    this.location.add(this.velocity);
 
-      if (this.isCollidingWithEdge()) {
-        this.velocity.x *= -1;
-      }
+    if (this.isCollidingWithEdge()) {
+      this.velocity.x *= -1;
     }
   }
 
@@ -38,6 +35,21 @@ class Box {
     ) {
       this.isFalling = false;
       return true;
+    }
+    return false;
+  }
+
+  collideWithLandedBox(landedBoxes) {
+    for (let landedBox of landedBoxes) {
+      if (
+        this.location.x < landedBox.location.x + landedBox.size &&
+        this.location.x + this.size > landedBox.location.x &&
+        this.location.y < landedBox.location.y + landedBox.size &&
+        this.location.y + this.size > landedBox.location.y
+      ) {
+        this.isFalling = false;
+        return true;
+      }
     }
     return false;
   }

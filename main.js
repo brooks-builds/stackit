@@ -1,7 +1,8 @@
 const webSocket = new WebSocket("ws://localhost:8080");
 let worldUnitSize = 30;
 let boxDropper;
-const boxes = [];
+let fallingBoxes = [];
+const landedBoxes = [];
 let platform;
 let score;
 
@@ -12,7 +13,7 @@ function setup() {
   platform = new Platform();
   webSocket.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    boxes.push(
+    fallingBoxes.push(
       new Box(
         boxDropper.location.copy(),
         boxDropper.velocity.copy(),
@@ -28,19 +29,26 @@ function draw() {
   clear();
   // update all the things
   boxDropper.update();
-  boxes.forEach((box) => {
+  fallingBoxes.forEach((box) => {
     box.update();
-    if (box.points && box.collideWithPlatform(platform)) {
+    if (
+      box.collideWithPlatform(platform) ||
+      box.collideWithLandedBox(landedBoxes)
+    ) {
       score.addScore(box.username);
-      box.points -= 1;
+      landedBoxes.push(box);
+      box.isLanded = true;
     }
   });
 
   // draw all the things
   drawBackground();
-  boxes.forEach((box) => box.render());
+  landedBoxes.forEach((box) => box.render());
+  fallingBoxes.forEach((box) => box.render());
   boxDropper.render();
   platform.render();
+
+  fallingBoxes = fallingBoxes.filter((box) => !box.isLanded);
 }
 
 function drawBackground() {
