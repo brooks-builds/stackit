@@ -1,11 +1,13 @@
 class Box {
-  constructor(location, velocity) {
+  constructor(location, velocity, username, usersColor) {
     this.location = location;
     this.velocity = velocity;
     this.velocity.y = 2;
-    this.color = color(0, 255, 0);
+    this.color = color(usersColor);
     this.size = worldUnitSize;
     this.isFalling = true;
+    this.username = username;
+    this.points = 1;
   }
 
   render() {
@@ -35,6 +37,8 @@ class Box {
       this.location.y + this.size > platform.location.y
     ) {
       this.isFalling = false;
+      return true;
     }
+    return false;
   }
 }
