@@ -17,7 +17,10 @@ function draw() {
   clear();
   // update all the things
   boxDropper.update();
-  boxes.forEach((box) => box.update());
+  boxes.forEach((box) => {
+    box.update();
+    box.collideWithPlatform(platform);
+  });
 
   // draw all the things
   drawBackground();
