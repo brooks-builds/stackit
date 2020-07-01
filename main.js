@@ -13,6 +13,15 @@ function setup() {
   platform = new Platform();
   webSocket.onmessage = (event) => {
     const data = JSON.parse(event.data);
+    let boxColor = data.color;
+
+    if (boxColor == "no color") {
+      webSocket.send(
+        "customize your box color by changing your user color with /color <color in hex>"
+      );
+      boxColor = "white";
+    }
+
     fallingBoxes.push(
       new Box(
         boxDropper.location.copy(),
@@ -37,6 +46,11 @@ function draw() {
       box.collideWithLandedBox(landedBoxes)
     ) {
       score.addScore(box.username);
+      webSocket.send(
+        `${box.username} scored! They now have ${
+          score.scores[box.username]
+        } points`
+      );
       landedBoxes.push(box);
       box.isLanded = true;
     }
