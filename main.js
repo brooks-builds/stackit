@@ -26,6 +26,7 @@ function setup() {
 }
 
 function draw() {
+  console.log(fallingBoxes.length);
   clear();
   // update all the things
   boxDropper.update();
@@ -40,6 +41,11 @@ function draw() {
       box.isLanded = true;
     }
   });
+  fallingBoxes = fallingBoxes.filter((box) => {
+    if (box.isOffScreen()) return false;
+
+    return !box.isLanded;
+  });
 
   // draw all the things
   drawBackground();
@@ -47,8 +53,6 @@ function draw() {
   fallingBoxes.forEach((box) => box.render());
   boxDropper.render();
   platform.render();
-
-  fallingBoxes = fallingBoxes.filter((box) => !box.isLanded);
 }
 
 function drawBackground() {

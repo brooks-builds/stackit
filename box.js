@@ -53,4 +53,8 @@ class Box {
     }
     return false;
   }
+
+  isOffScreen() {
+    return this.location.y > height;
+  }
 }
