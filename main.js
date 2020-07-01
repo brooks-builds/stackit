@@ -5,6 +5,7 @@ let fallingBoxes = [];
 const landedBoxes = [];
 let platform;
 let score;
+let water;
 
 function setup() {
   createCanvas(1920, 1080);
@@ -32,10 +33,10 @@ function setup() {
     );
   };
   score = new Score();
+  water = new Water();
 }
 
 function draw() {
-  console.log(fallingBoxes.length);
   clear();
   // update all the things
   boxDropper.update();
@@ -60,16 +61,12 @@ function draw() {
 
     return !box.isLanded;
   });
+  water.update();
 
   // draw all the things
-  drawBackground();
   landedBoxes.forEach((box) => box.render());
   fallingBoxes.forEach((box) => box.render());
   boxDropper.render();
   platform.render();
-}
-
-function drawBackground() {
-  fill(0, 0, 255);
-  rect(0, height - worldUnitSize, width, worldUnitSize);
+  water.render();
 }
