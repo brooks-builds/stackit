@@ -40,6 +40,7 @@ function draw() {
   clear();
   // update all the things
   boxDropper.update();
+  platform.update();
   fallingBoxes.forEach((box) => {
     box.update();
     if (
@@ -64,7 +65,10 @@ function draw() {
   water.update();
 
   // draw all the things
-  landedBoxes.forEach((box) => box.render());
+  landedBoxes.forEach((box) => {
+    box.update(platform.velocity);
+    box.render();
+  });
   fallingBoxes.forEach((box) => box.render());
   boxDropper.render();
   platform.render();

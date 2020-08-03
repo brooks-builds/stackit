@@ -7,6 +7,7 @@ class Box {
     this.size = worldUnitSize;
     this.username = username;
     this.isLanded = false;
+    this.isDead = false;
   }
 
   render() {
@@ -14,11 +15,23 @@ class Box {
     rect(this.location.x, this.location.y, this.size, this.size);
   }
 
-  update() {
-    this.location.add(this.velocity);
+  update(velocity = this.velocity) {
+    this.location.add(velocity);
 
-    if (this.isCollidingWithEdge()) {
+    if (this.isDead) {
+      this.location.add(this.velocity);
+      return;
+    }
+
+    if (this.isCollidingWithEdge() && !this.isLanded) {
       this.velocity.x *= -1;
+    } else if (this.isCollidingWithEdge() && this.isLanded) {
+      this.isLanded = false;
+      this.velocity.mult(0);
+      this.isDead = true;
+      setTimeout(() => {
+        this.velocity.y = 1.0;
+      }, 3000);
     }
   }
 

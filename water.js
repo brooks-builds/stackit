@@ -4,11 +4,11 @@ class Water {
     this.w = width + this.xspacing; // Width of entire wave
     this.theta = 0.0; // Start angle at 0
     this.amplitude = 5; // Height of wave
-    this.period = 500.0; // How many pixels before the wave repeats
+    this.period = 250.0; // How many pixels before the wave repeats
     this.dx = (TWO_PI / this.period) * this.xspacing; // Value for incrementing x
     this.yvalues = new Array(floor(this.w / this.xspacing)); // Using an array to store height values for the wave
     this.centerLocationY = height - this.amplitude / 2;
-    this.color = color("blue");
+    this.color = color(0, 0, 255, 10);
   }
 
   update() {
@@ -23,8 +23,8 @@ class Water {
       ellipse(
         x * this.xspacing,
         this.centerLocationY + this.yvalues[x],
-        16,
-        16
+        24,
+        24
       );
     }
   }

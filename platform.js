@@ -6,13 +6,35 @@ class Platform {
       width / 2 - this.width / 2,
       height - this.height
     );
-    // this.width = width;
-    // this.location = createVector(0, height - this.height);
+    this.velocity = createVector(1, 0);
     this.color = color(255, 255, 0);
   }
 
   render() {
     fill(this.color);
     rect(this.location.x, this.location.y, this.width, this.height);
+  }
+
+  update() {
+    this.location.add(this.velocity);
+    this.collideWithWalls();
+  }
+
+  collideWithWalls() {
+    if (this.location.x + this.width >= width) {
+      this.location.x = width - this.width;
+      this.velocity.mult(-1);
+    } else if (this.location.x <= 0) {
+      this.location.x = 0;
+      this.velocity.mult(-1);
+    }
+
+    // if (this.location.x < -this.width) {
+    //   this.location.x = -this.width;
+    //   this.velocity.mult(-1);
+    // } else if (this.location.x > width + this.width) {
+    //   this.location.x = this.width + this.width;
+    //   this.velocity.mult(-1);
+    // }
   }
 }
