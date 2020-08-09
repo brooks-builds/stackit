@@ -11,8 +11,10 @@ class Box {
   }
 
   render() {
-    fill(this.color);
+    fill("black");
     rect(this.location.x, this.location.y, this.size, this.size);
+    fill(this.color);
+    rect(this.location.x+1, this.location.y+1, this.size-2, this.size-2);
   }
 
   update(velocity = this.velocity) {
