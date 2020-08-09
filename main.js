@@ -38,6 +38,7 @@ function setup() {
 
 function draw() {
   clear();
+  background('#222222');
   // update all the things
   boxDropper.update();
   platform.update();
