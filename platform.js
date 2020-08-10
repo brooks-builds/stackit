@@ -10,6 +10,10 @@ class Platform {
     this.color = color(255, 255, 0);
   }
 
+  resize() {
+    this.location.y = height - this.height;
+  }
+
   render() {
     render_outlined_rect(this.location.x, this.location.y, this.width, this.height, this.color);
   }

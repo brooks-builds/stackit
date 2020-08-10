@@ -9,7 +9,10 @@ let water;
 let test_username = "$Test$";
 
 function setup() {
-  createCanvas(1920, 1080);
+  // create a canvas with the visible extents of our browser same as inner width and height.
+  // if you are using this in OBS or something, then set the browser source size to 1920x1080 or whatever and this will use that
+  // window resizing changes the canvas size, and while this works correctly, we aren't actually scaling things to make it useful
+  createCanvas(windowWidth, windowHeight);
 
   boxDropper = new BoxDropper();
   platform = new Platform();
@@ -47,7 +50,7 @@ function draw() {
     box.update();
     if (
       box.isColliding(platform) ||
-      landedBoxes.some(element => box.isColliding(element))
+      landedBoxes.some(landedBox => box.isColliding(landedBox))
     ) {
       if (box.username != test_username) {
         score.addScore(box.username);
@@ -92,7 +95,17 @@ function mouseClicked() {
       boxDropper.location.copy(),
       boxDropper.velocity.copy(),
       test_username,
-      color(random(256), random(256), random(256))
+      random_rgb_color()
     )
   );
+}
+
+function random_rgb_color() {
+  return color(random(256), random(256), random(256));
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  water.resize();
+  platform.resize();
 }
