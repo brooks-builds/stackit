@@ -21,3 +21,4 @@
 * cleanup any TODO or FIXME comments
 * improve comments in code so they make sense
 * remove comments that are unecessary
+* better structure code and files
