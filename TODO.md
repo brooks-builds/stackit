@@ -15,6 +15,8 @@
 * handle boxes that have connections beyond threshold *n*
 * add commands and/or random events to change direction of the dropper or platform
 * do the same for water and/or maybe have it vary itself over time
+* drop boxes that can't fit screen on resize
+* alternately scale things on resize to a min size
 
 ### General code changes
 * refactor away duplicated code
