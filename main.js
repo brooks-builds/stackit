@@ -82,3 +82,14 @@ function render_outlined_rect(x, y, w, h, color) {
   fill(color);
   rect(x + 1, y + 1, w - 2, h - 2);
 }
+
+function mouseClicked() {
+  fallingBoxes.push(
+    new Box(
+      boxDropper.location.copy(),
+      boxDropper.velocity.copy(),
+      "Test",
+      color(random(256), random(256), random(256))
+    )
+  );
+}
