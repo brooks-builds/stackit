@@ -1,10 +1,14 @@
 class Box {
   constructor(location, velocity, username, usersColor) {
-    this.location = createVector(location.x+2.5, location.y);
+    this.location = createVector(location.x + 2.5, location.y);
     this.velocity = velocity;
     this.velocity.y = 2;
     this.color = color(usersColor);
     this.size = worldUnitSize;
+    // see lines 46 - line 10 + 11 bandaid the differences in classes at the moment
+    // our classes probably need a base object to inherit from so we can unify this stuff and reduce code duplication
+    this.height = this.size;
+    this.width = this.size;
     this.username = username;
     this.isLanded = false;
     this.isDead = false;
@@ -39,31 +43,15 @@ class Box {
     return this.location.x + this.size >= width || this.location.x <= 0;
   }
 
-  collideWithPlatform(platform) {
+  // this can check any object with an x, y, width, and height IE: box and platform
+  isColliding(target) {
     if (
-      this.location.x < platform.location.x + platform.width &&
-      this.location.x + this.size > platform.location.x &&
-      this.location.y < platform.location.y + platform.height &&
-      this.location.y + this.size > platform.location.y
-    ) {
-      this.isFalling = false;
-      return true;
-    }
-    return false;
-  }
+      this.location.x < target.location.x + target.width &&
+      this.location.x + this.size > target.location.x &&
+      this.location.y < target.location.y + target.height &&
+      this.location.y + this.size > target.location.y
+    ) { return true; }
 
-  collideWithLandedBox(landedBoxes) {
-    for (let landedBox of landedBoxes) {
-      if (
-        this.location.x < landedBox.location.x + landedBox.size &&
-        this.location.x + this.size > landedBox.location.x &&
-        this.location.y < landedBox.location.y + landedBox.size &&
-        this.location.y + this.size > landedBox.location.y
-      ) {
-        this.isFalling = false;
-        return true;
-      }
-    }
     return false;
   }
 

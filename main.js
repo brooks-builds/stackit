@@ -45,13 +45,13 @@ function draw() {
   fallingBoxes.forEach((box) => {
     box.update();
     if (
-      box.collideWithPlatform(platform) ||
-      box.collideWithLandedBox(landedBoxes)
+      box.isColliding(platform) ||
+      landedBoxes.some(element => box.isColliding(element))
     ) {
       score.addScore(box.username);
       webSocket.send(
         `${box.username} scored! They now have ${
-          score.scores[box.username]
+        score.scores[box.username]
         } points`
       );
       landedBoxes.push(box);
