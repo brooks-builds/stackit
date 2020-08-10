@@ -19,24 +19,31 @@ class Box {
   }
 
   update(velocity = this.velocity) {
-    this.location.add(velocity);
 
     if (this.isDead) {
-      this.location.add(this.velocity);
+      // dead stuff falls down faster and faster
       this.velocity.y *= 1.05;
+      this.location.add(this.velocity);
       return;
     }
 
     if (this.isCollidingWithEdge() && !this.isLanded) {
+      if (this.location.x + this.size >= width) {
+        this.location.x = width - this.size;
+      } else if (this.location.x <= 0) {
+        this.location.x = 0;
+      }
       this.velocity.x *= -1;
-    } else if (this.isCollidingWithEdge() && this.isLanded) {
+    } else if ((this.isCollidingWithEdge() || this.isColliding(boxDropper)) && this.isLanded) {
       this.isLanded = false;
-      this.velocity.mult(0);
       this.isDead = true;
-      setTimeout(() => {
-        this.velocity.y = 1.0;
-      }, 3000);
+      this.velocity.mult(0);
+      // setTimeout(() => {
+      this.velocity.y = 1.0; // timeout optional, I personally think them dropping in line with the edge on hit looks better - bare
+      // }, 3000);
     }
+
+    this.location.add(velocity);
   }
 
   isCollidingWithEdge() {
