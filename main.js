@@ -80,10 +80,10 @@ function draw() {
 }
 
 function render_outlined_rect(x, y, w, h, color) {
-  fill("black");
-  rect(x, y, w, h);
+  strokeWeight(1);
+  stroke("black");
   fill(color);
-  rect(x + 1, y + 1, w - 2, h - 2);
+  rect(x, y, w, h);
 }
 
 function mouseClicked() {
