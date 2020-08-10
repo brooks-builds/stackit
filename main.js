@@ -6,6 +6,7 @@ const landedBoxes = [];
 let platform;
 let score;
 let water;
+let test_username = "$Test$";
 
 function setup() {
   createCanvas(1920, 1080);
@@ -16,7 +17,7 @@ function setup() {
     const data = JSON.parse(event.data);
     let boxColor = data.color;
 
-    if (boxColor == "no color") {
+    if (boxColor == "no color" && data.username != test_username) {
       webSocket.send(
         "customize your box color by changing your user color with /color <color in hex>"
       );
@@ -48,12 +49,14 @@ function draw() {
       box.isColliding(platform) ||
       landedBoxes.some(element => box.isColliding(element))
     ) {
-      score.addScore(box.username);
-      webSocket.send(
-        `${box.username} scored! They now have ${
-        score.scores[box.username]
-        } points`
-      );
+      if (box.username != test_username) {
+        score.addScore(box.username);
+        webSocket.send(
+          `${box.username} scored! They now have ${
+          score.scores[box.username]
+          } points`
+        );
+      }
       landedBoxes.push(box);
       box.isLanded = true;
     }
@@ -88,7 +91,7 @@ function mouseClicked() {
     new Box(
       boxDropper.location.copy(),
       boxDropper.velocity.copy(),
-      "Test",
+      test_username,
       color(random(256), random(256), random(256))
     )
   );
