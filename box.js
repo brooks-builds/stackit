@@ -1,69 +1,74 @@
 class Box {
   constructor(location, velocity, username, usersColor) {
-    this.location = location;
+    this.location = createVector(location.x + 2.5, location.y);
     this.velocity = velocity;
     this.velocity.y = 2;
     this.color = color(usersColor);
     this.size = worldUnitSize;
+    // see lines 46 - line 10 + 11 bandaid the differences in classes at the moment
+    // our classes probably need a base object to inherit from so we can unify this stuff and reduce code duplication
+    this.height = this.size;
+    this.width = this.size;
     this.username = username;
     this.isLanded = false;
     this.isDead = false;
   }
 
   render() {
-    fill(this.color);
-    rect(this.location.x, this.location.y, this.size, this.size);
+    render_outlined_rect(
+      this.location.x,
+      this.location.y,
+      this.size,
+      this.size,
+      this.color
+    );
   }
 
   update(velocity = this.velocity) {
-    this.location.add(velocity);
-
     if (this.isDead) {
+      // dead stuff falls down faster and faster
+      this.velocity.y *= 1.05;
       this.location.add(this.velocity);
       return;
     }
 
     if (this.isCollidingWithEdge() && !this.isLanded) {
+      if (this.location.x + this.size >= width) {
+        this.location.x = width - this.size;
+      } else if (this.location.x <= 0) {
+        this.location.x = 0;
+      }
       this.velocity.x *= -1;
-    } else if (this.isCollidingWithEdge() && this.isLanded) {
+    } else if (
+      (this.isCollidingWithEdge() || this.isColliding(boxDropper)) &&
+      this.isLanded
+    ) {
       this.isLanded = false;
-      this.velocity.mult(0);
       this.isDead = true;
-      setTimeout(() => {
-        this.velocity.y = 1.0;
-      }, 3000);
+      this.velocity.mult(0);
+      // setTimeout(() => {
+      this.velocity.y = 1.0; // timeout optional, I personally think them dropping in line with the edge on hit looks better - bare
+      // }, 3000);
     }
+
+    this.location.add(velocity);
   }
 
   isCollidingWithEdge() {
     return this.location.x + this.size >= width || this.location.x <= 0;
   }
 
-  collideWithPlatform(platform) {
+  // this can check any object with an x, y, width, and height IE: box and platform
+  isColliding(target) {
     if (
-      this.location.x < platform.location.x + platform.width &&
-      this.location.x + this.size > platform.location.x &&
-      this.location.y < platform.location.y + platform.height &&
-      this.location.y + this.size > platform.location.y
+      this.location.x < target.location.x + target.width &&
+      this.location.x + this.size > target.location.x &&
+      this.location.y < target.location.y + target.height &&
+      this.location.y + this.size > target.location.y
     ) {
-      this.isFalling = false;
       return true;
     }
-    return false;
-  }
 
-  collideWithLandedBox(landedBoxes) {
-    for (let landedBox of landedBoxes) {
-      if (
-        this.location.x < landedBox.location.x + landedBox.size &&
-        this.location.x + this.size > landedBox.location.x &&
-        this.location.y < landedBox.location.y + landedBox.size &&
-        this.location.y + this.size > landedBox.location.y
-      ) {
-        this.isFalling = false;
-        return true;
-      }
-    }
     return false;
   }
 
