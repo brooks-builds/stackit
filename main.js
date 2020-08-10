@@ -75,3 +75,10 @@ function draw() {
   platform.render();
   water.render();
 }
+
+function render_outlined_rect(x, y, w, h, color) {
+  fill("black");
+  rect(x, y, w, h);
+  fill(color);
+  rect(x + 1, y + 1, w - 2, h - 2);
+}

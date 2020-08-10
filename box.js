@@ -11,10 +11,7 @@ class Box {
   }
 
   render() {
-    fill("black");
-    rect(this.location.x, this.location.y, this.size, this.size);
-    fill(this.color);
-    rect(this.location.x+1, this.location.y+1, this.size-2, this.size-2);
+    render_outlined_rect(this.location.x, this.location.y, this.size, this.size, this.color);
   }
 
   update(velocity = this.velocity) {
@@ -22,6 +19,7 @@ class Box {
 
     if (this.isDead) {
       this.location.add(this.velocity);
+      this.velocity.y *= 1.05;
       return;
     }
 

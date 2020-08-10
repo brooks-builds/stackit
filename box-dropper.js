@@ -1,14 +1,15 @@
 class BoxDropper {
   constructor() {
-    this.location = createVector(0, 0);
     this.size = worldUnitSize + 5;
+    // start closer to the middle
+    this.location = createVector(width / 2 - this.size / 2, 0);
     this.color = color(255, 0, 0);
-    this.velocity = createVector(5, 0);
+    // randomize the initial direction
+    this.velocity = createVector(random([-5, 5]), 0);
   }
 
   render() {
-    fill(this.color);
-    rect(this.location.x, this.location.y, this.size, this.size);
+    render_outlined_rect(this.location.x, this.location.y, this.size, this.size, this.color);
   }
 
   update() {

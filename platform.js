@@ -6,13 +6,12 @@ class Platform {
       width / 2 - this.width / 2,
       height - this.height
     );
-    this.velocity = createVector(1, 0);
+    this.velocity = createVector(random([-1, 1]), 0);
     this.color = color(255, 255, 0);
   }
 
   render() {
-    fill(this.color);
-    rect(this.location.x, this.location.y, this.width, this.height);
+    render_outlined_rect(this.location.x, this.location.y, this.width, this.height, this.color);
   }
 
   update() {
