@@ -26,16 +26,35 @@ class Water {
     // A simple way to draw the wave with an ellipse at each location
     for (let x = 0; x < this.yvalues.length; x++) {
       // this adds in some transparency. if it's too much comment the rside out and make it 255 to be solid
-      let alpha = (((this.yvalues[x] - -this.amplitude) * (150 - 50)) / (this.amplitude - -this.amplitude)) + 50;
+      let alpha =
+        ((this.yvalues[x] - -this.amplitude) * (150 - 50)) /
+          (this.amplitude - -this.amplitude) +
+        50;
       // this modifies the height of the cyan wave so we see it more the higher the main wave is.
-      let hmod = (((this.yvalues[x] - -this.amplitude) * (0 - 2)) / (this.amplitude - -this.amplitude)) + 2;
+      let hmod =
+        ((this.yvalues[x] - -this.amplitude) * (0 - 2)) /
+          (this.amplitude - -this.amplitude) +
+        2;
       // if the pretty water is too much comment the next 2 lines and line above, and adjust xspacing(line 3) and the width,height in line 37 ellipse
       fill(0, 255, 255, alpha);
-      ellipse(x * this.xspacing, this.centerLocationY + this.yvalues[x] + -hmod, 8, 32);
-      let color = (((this.yvalues[x] - -this.amplitude) * (80 - 255)) / (this.amplitude - -this.amplitude)) + 255;
+      ellipse(
+        x * this.xspacing,
+        this.centerLocationY + this.yvalues[x] + -hmod,
+        8,
+        32
+      );
+      let color =
+        ((this.yvalues[x] - -this.amplitude) * (80 - 255)) /
+          (this.amplitude - -this.amplitude) +
+        255;
       fill(0, 0, color, alpha);
       // if you adjust xspacing, you may want to adjust the last two values here(width,height) to smooth things out
-      ellipse(x * this.xspacing, this.centerLocationY + this.yvalues[x], 16, 32);
+      ellipse(
+        x * this.xspacing,
+        this.centerLocationY + this.yvalues[x],
+        16,
+        32
+      );
     }
   }
 

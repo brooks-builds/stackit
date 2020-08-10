@@ -15,11 +15,16 @@ class Box {
   }
 
   render() {
-    render_outlined_rect(this.location.x, this.location.y, this.size, this.size, this.color);
+    render_outlined_rect(
+      this.location.x,
+      this.location.y,
+      this.size,
+      this.size,
+      this.color
+    );
   }
 
   update(velocity = this.velocity) {
-
     if (this.isDead) {
       // dead stuff falls down faster and faster
       this.velocity.y *= 1.05;
@@ -34,7 +39,10 @@ class Box {
         this.location.x = 0;
       }
       this.velocity.x *= -1;
-    } else if ((this.isCollidingWithEdge() || this.isColliding(boxDropper)) && this.isLanded) {
+    } else if (
+      (this.isCollidingWithEdge() || this.isColliding(boxDropper)) &&
+      this.isLanded
+    ) {
       this.isLanded = false;
       this.isDead = true;
       this.velocity.mult(0);
@@ -57,7 +65,9 @@ class Box {
       this.location.x + this.size > target.location.x &&
       this.location.y < target.location.y + target.height &&
       this.location.y + this.size > target.location.y
-    ) { return true; }
+    ) {
+      return true;
+    }
 
     return false;
   }

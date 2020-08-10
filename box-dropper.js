@@ -11,7 +11,13 @@ class BoxDropper {
   }
 
   render() {
-    render_outlined_rect(this.location.x, this.location.y, this.size, this.size, this.color);
+    render_outlined_rect(
+      this.location.x,
+      this.location.y,
+      this.size,
+      this.size,
+      this.color
+    );
   }
 
   update() {

@@ -42,7 +42,7 @@ function setup() {
 
 function draw() {
   clear();
-  background('#222222');
+  background("#222222");
   // update all the things
   boxDropper.update();
   platform.update();
@@ -50,13 +50,13 @@ function draw() {
     box.update();
     if (
       box.isColliding(platform) ||
-      landedBoxes.some(landedBox => box.isColliding(landedBox))
+      landedBoxes.some((landedBox) => box.isColliding(landedBox))
     ) {
       if (box.username != test_username) {
         score.addScore(box.username);
         webSocket.send(
           `${box.username} scored! They now have ${
-          score.scores[box.username]
+            score.scores[box.username]
           } points`
         );
       }

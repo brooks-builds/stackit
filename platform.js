@@ -15,7 +15,13 @@ class Platform {
   }
 
   render() {
-    render_outlined_rect(this.location.x, this.location.y, this.width, this.height, this.color);
+    render_outlined_rect(
+      this.location.x,
+      this.location.y,
+      this.width,
+      this.height,
+      this.color
+    );
   }
 
   update() {
