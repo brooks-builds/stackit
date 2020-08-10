@@ -1,6 +1,6 @@
 class Box {
   constructor(location, velocity, username, usersColor) {
-    this.location = location;
+    this.location = createVector(location.x+2.5, location.y);
     this.velocity = velocity;
     this.velocity.y = 2;
     this.color = color(usersColor);
