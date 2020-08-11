@@ -34,22 +34,22 @@ fn main() -> GameResult {
         events_loop.poll_events(|event| {
             game.ctx.process_event(&event);
             match event {
-                Event::WindowEvent { event, .. } => match event {
+                Event::WindowEvent { event, .. /* window_id */ } => match event {
                     WindowEvent::CloseRequested => event::quit(game.ctx),
                     WindowEvent::KeyboardInput {
                         input:
                             KeyboardInput {
                                 virtual_keycode: Some(keycode),
-                                ..
+                                .. // scancode: u32, state: ElementState, modifiers: ModifiersState
                             },
-                        ..
+                        .. // device_id: DeviceId
                     } => match keycode {
                         event::KeyCode::Escape => event::quit(game.ctx),
-                        _ => {}
+                        _ => { /* https://docs.rs/ggez/0.5.1/ggez/input/keyboard/enum.KeyCode.html */ }
                     },
-                    _ => {}
+                    _ => { /* https://docs.rs/ggez/0.5.1/ggez/event/winit_event/enum.WindowEvent.html */ }
                 },
-                _ => {}
+                _ => { /* https://docs.rs/ggez/0.5.1/ggez/event/winit_event/enum.Event.html */ }
             }
         });
 
@@ -59,7 +59,8 @@ fn main() -> GameResult {
         // Render
         game.render()?;
 
-        ggez::timer::yield_now();
+        // ggez::timer::yield_now();
+        std::thread::sleep(std::time::Duration::from_nanos(1));
     }
 
     Ok(())
@@ -87,7 +88,9 @@ impl StackIt<'_> {
 // there has to be a better way to do this
 fn center_window(ctx: &mut ggez::Context) {
     let window = graphics::window(ctx);
-    let mut pos = window.get_position().unwrap();
+    let mut pos = window
+        .get_position()
+        .expect("Failed to get window position for centering!");
     pos.x = SCREEN_WIDTH as f64 / 2.0 - WIN_WIDTH as f64 / 2.0;
     pos.y = SCREEN_HEIGHT as f64 / 2.0 - WIN_HEIGHT as f64 / 2.0;
     window.set_position(pos);
