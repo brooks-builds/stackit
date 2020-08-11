@@ -1,8 +1,10 @@
 ### TODO for rust port/expansion of "Stack It!"
 * create object structs
-    - [ ] platform
-    - [ ] dropper
-    - [ ] box
+    - [X] base object struct
+    - [ ] platform constructor
+    - [ ] dropper constructor
+    - [ ] box constructor
+    - [ ] game constructor
 * core funtionality
     - [ ] dropper emits a box at *n* angle
     - [ ] dropper moves back/forth
