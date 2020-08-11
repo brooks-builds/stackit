@@ -20,6 +20,8 @@
 * waves
     - [ ] calculation
     - [ ] fancy-ish inexpensive draw calls
+* network
+    - [ ] simple server interface to receive command messages
 ___
 * feature creep considerations
     * consider using images for textures instead of draw calls
