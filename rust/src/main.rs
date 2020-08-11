@@ -16,11 +16,19 @@ struct StackIt<'s> {
 fn main() -> GameResult {
     // Context and mostly Window setup
     let window_mode = ggez::conf::WindowMode::default().dimensions(WIN_WIDTH, WIN_HEIGHT);
+    let window_setup = ggez::conf::WindowSetup::default()
+        .vsync(false)
+        .title(GAME_NAME);
+    let module_conf = ggez::conf::ModuleConf {
+        gamepad: false,
+        audio: false,
+    };
 
-    let context_builder = ggez::ContextBuilder::new(GAME_NAME, AUTHOR).window_mode(window_mode);
+    let context_builder = ggez::ContextBuilder::new(GAME_NAME, AUTHOR)
+        .window_mode(window_mode)
+        .window_setup(window_setup)
+        .modules(module_conf);
     let (ctx, events_loop) = &mut context_builder.build()?;
-
-    graphics::set_window_title(ctx, GAME_NAME);
 
     center_window(ctx);
 
@@ -30,12 +38,14 @@ fn main() -> GameResult {
     while game.ctx.continuing {
         game.ctx.timer_context.tick();
 
-        // Input
-        events_loop.poll_events(|event| {
-            game.ctx.process_event(&event);
-            match event {
-                Event::WindowEvent { event, .. /* window_id */ } => match event {
+        // Window Events
+        events_loop.poll_events(|p_event| {
+            game.ctx.process_event(&p_event);
+
+            if let Event::WindowEvent { event, .. } = p_event {
+                match event {
                     WindowEvent::CloseRequested => event::quit(game.ctx),
+
                     WindowEvent::KeyboardInput {
                         input:
                             KeyboardInput {
@@ -45,13 +55,32 @@ fn main() -> GameResult {
                         .. // device_id: DeviceId
                     } => match keycode {
                         event::KeyCode::Escape => event::quit(game.ctx),
+                        event::KeyCode::D => { todo!("Drop a box") },
+                        event::KeyCode::C => { todo!("Clear boxes") },
                         _ => { /* https://docs.rs/ggez/0.5.1/ggez/input/keyboard/enum.KeyCode.html */ }
                     },
+
+                    WindowEvent::MouseInput {
+                        button,
+                        .. // device_id: DeviceID, state: ElementState, modifiers: ModifiersState
+                    } => match button  { 
+                        ggez::input::mouse::MouseButton::Left => { todo!("Left Click") },
+                        ggez::input::mouse::MouseButton::Right => { todo!("Right Click") },
+                        _ => { /* Right, Middle, Other(u8) */ },
+                    },
+
+                    // WindowEvent::MouseWheel {
+                    //     delta,
+                    //     .. // device_id: DeviceID, phase: TouchPhase modifiers: ModifiersState
+                    // } => {},
+
                     _ => { /* https://docs.rs/ggez/0.5.1/ggez/event/winit_event/enum.WindowEvent.html */ }
-                },
-                _ => { /* https://docs.rs/ggez/0.5.1/ggez/event/winit_event/enum.Event.html */ }
+                }
             }
         });
+
+        // Network Events
+        // Wire in twitch bot and/or other sources of input
 
         // Update
         game.update()?;
@@ -74,6 +103,11 @@ impl StackIt<'_> {
     }
 
     fn update(&mut self) -> GameResult {
+        graphics::set_window_title(
+            self.ctx,
+            format!("FPS: {:.0}", ggez::timer::fps(self.ctx)).as_str(),
+        );
+
         Ok(())
     }
 
