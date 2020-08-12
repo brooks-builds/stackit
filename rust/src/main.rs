@@ -11,6 +11,15 @@ const SCREEN_HEIGHT: f32 = 1080.0;
 const WIN_WIDTH: f32 = SCREEN_WIDTH / 2.0;
 const WIN_HEIGHT: f32 = SCREEN_HEIGHT / 2.0;
 const BASE_UNIT_SIZE: f32 = 16.0;
+const BOX_IMAGES: [&str; 7] = [
+    "/ferris_64.png",
+    "/ferris_party_64.png",
+    "/ferris_question_64.png",
+    "/ferris_smile_64.png",
+    "/ferris_thinking_64.png",
+    "/ferris_worried_64.png",
+    "/unsafe_ferris_64.png",
+];
 
 struct StackIt<'s> {
     // All your game are belong to us
@@ -20,6 +29,7 @@ struct StackIt<'s> {
     box_actors: Slab<SquareActor>,
     box_landed: Slab<SquareActor>,
     random: rand::rngs::ThreadRng,
+    box_images: Vec<graphics::Image>,
 }
 
 type Vector2 = ggez::nalgebra::Vector2<f32>;
@@ -39,6 +49,8 @@ struct SquareActor {
     size: Point2,
     velocity: Vector2,
     color: graphics::Color,
+    use_image: bool,
+    image_id: usize,
     landed: bool,
     dying: bool,
     dead: bool,
@@ -52,6 +64,8 @@ impl SquareActor {
             size: Point2::new(BASE_UNIT_SIZE, BASE_UNIT_SIZE),
             velocity: Vector2::new(0.0, 0.0),
             color: graphics::Color::from_rgb(255, 255, 255),
+            use_image: false,
+            image_id: 0,
             landed: false,
             dying: false,
             dead: false,
@@ -81,14 +95,28 @@ impl SquareActor {
         }
     }
 
-    fn draw(&self, ctx: &mut ggez::Context) -> GameResult {
-        let mesh = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::fill(),
-            self.as_rect(),
-            self.color,
-        )?;
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+    fn draw(&self, ctx: &mut ggez::Context, img: &Vec<graphics::Image>) -> GameResult {
+        if self.use_image {
+            // todo: handle images for platform and dropper. we currently assume box only
+            let image = &img[self.image_id];
+
+            // todo: our images are 64x64 but we should scale accordingly, but we are square-ish anyway
+            let scalar = (1.0 / f32::from(image.width())) * BASE_UNIT_SIZE;
+
+            let draw_params = graphics::DrawParam::default()
+                .dest(self.location)
+                .scale(Vector2::new(scalar, scalar));
+            graphics::draw(ctx, image, draw_params)?;
+        } else {
+            let mesh = graphics::Mesh::new_rectangle(
+                ctx,
+                graphics::DrawMode::fill(),
+                self.as_rect(),
+                self.color,
+            )?;
+
+            graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+        }
 
         Ok(())
     }
@@ -180,6 +208,11 @@ impl StackIt<'_> {
         let box_actors: Slab<SquareActor> = Slab::with_capacity(100);
         let box_landed: Slab<SquareActor> = Slab::with_capacity(100);
 
+        let mut box_images = Vec::with_capacity(BOX_IMAGES.len());
+        for img in BOX_IMAGES.iter() {
+            box_images.push(graphics::Image::new(ctx, img).unwrap());
+        }
+
         StackIt {
             ctx,
             platform,
@@ -187,6 +220,7 @@ impl StackIt<'_> {
             box_actors,
             box_landed,
             random,
+            box_images,
         }
     }
 
@@ -243,15 +277,15 @@ impl StackIt<'_> {
         graphics::clear(self.ctx, graphics::BLACK);
 
         for (_idx, box_actor) in self.box_actors.iter() {
-            box_actor.draw(self.ctx)?;
+            box_actor.draw(self.ctx, &self.box_images)?;
         }
 
         for (_idx, landed_box) in self.box_landed.iter() {
-            landed_box.draw(self.ctx)?;
+            landed_box.draw(self.ctx, &self.box_images)?;
         }
 
-        self.platform.draw(self.ctx)?;
-        self.dropper.draw(self.ctx)?;
+        self.platform.draw(self.ctx, &self.box_images)?;
+        self.dropper.draw(self.ctx, &self.box_images)?;
 
         graphics::present(self.ctx)?;
 
@@ -267,6 +301,8 @@ impl StackIt<'_> {
         box_new.velocity = self.dropper.velocity;
         box_new.velocity.y = 2.0;
         box_new.color = random_rgb(&mut self.random);
+        box_new.use_image = true;
+        box_new.image_id = self.random.gen_range(0, self.box_images.len());
 
         self.box_actors.insert(box_new);
     }
@@ -361,7 +397,7 @@ fn main() -> GameResult {
         // Wire in twitch bot and/or other sources of input
 
         // Update
-        while ggez::timer::check_update_time(game.ctx, 60) {
+        while ggez::timer::check_update_time(game.ctx, 30) {
             game.update()?;
         }
 
