@@ -4,6 +4,7 @@ use rand::{self, Rng};
 use slab::Slab;
 use std::{thread, time};
 
+// putting some of this here for ease of editing until handled better
 const GAME_NAME: &str = "Stack It!";
 const AUTHOR: &str = "_Bare";
 const SCREEN_WIDTH: f32 = 1920.0; // assumption until we pull it from somewhere, ggez doesn't expose it
@@ -11,6 +12,19 @@ const SCREEN_HEIGHT: f32 = 1080.0;
 const WIN_WIDTH: f32 = SCREEN_WIDTH / 2.0;
 const WIN_HEIGHT: f32 = SCREEN_HEIGHT / 2.0;
 const BASE_UNIT_SIZE: f32 = 16.0;
+const PLATFORM_WIDTH_MUL: f32 = 5.0;
+const PLATFORM_SPEED: f32 = 1.0;
+const DROPPER_SIZE_MUL: f32 = 1.25;
+const DROPPER_SPEED: f32 = 5.0;
+const BOX_IMAGES: [&str; 7] = [
+    "/ferris_64.png",
+    "/ferris_party_64.png",
+    "/ferris_question_64.png",
+    "/ferris_smile_64.png",
+    "/ferris_thinking_64.png",
+    "/ferris_worried_64.png",
+    "/unsafe_ferris_64.png",
+];
 
 struct StackIt<'s> {
     // All your game are belong to us
@@ -20,6 +34,7 @@ struct StackIt<'s> {
     box_actors: Slab<SquareActor>,
     box_landed: Slab<SquareActor>,
     random: rand::rngs::ThreadRng,
+    box_images: Vec<graphics::Image>,
 }
 
 type Vector2 = ggez::nalgebra::Vector2<f32>;
@@ -39,6 +54,8 @@ struct SquareActor {
     size: Point2,
     velocity: Vector2,
     color: graphics::Color,
+    use_image: bool,
+    image_id: usize,
     landed: bool,
     dying: bool,
     dead: bool,
@@ -48,10 +65,12 @@ impl SquareActor {
     fn new(actor_type: Actor) -> SquareActor {
         SquareActor {
             actor_type,
-            location: Point2::new(0.0, 0.0), // todo: location & size were a rect, make them a rect again maybe?
+            location: Point2::new(0.0, 0.0),
             size: Point2::new(BASE_UNIT_SIZE, BASE_UNIT_SIZE),
             velocity: Vector2::new(0.0, 0.0),
             color: graphics::Color::from_rgb(255, 255, 255),
+            use_image: false,
+            image_id: 0,
             landed: false,
             dying: false,
             dead: false,
@@ -69,7 +88,7 @@ impl SquareActor {
 
     fn do_motion(&mut self) {
         if self.dying {
-            self.velocity *= 1.04;
+            self.velocity *= 1.05;
         }
 
         self.location += self.velocity;
@@ -81,14 +100,29 @@ impl SquareActor {
         }
     }
 
-    fn draw(&self, ctx: &mut ggez::Context) -> GameResult {
-        let mesh = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::fill(),
-            self.as_rect(),
-            self.color,
-        )?;
-        graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+    fn draw(&self, ctx: &mut ggez::Context, img: &Vec<graphics::Image>) -> GameResult {
+        if self.use_image {
+            // todo: handle images for platform and dropper. we currently assume box only
+            let image = &img[self.image_id];
+
+            // todo: our images are 64x64 but we should scale accordingly, but we are square-ish anyway
+            let scalar = (1.0 / f32::from(image.width())) * BASE_UNIT_SIZE;
+
+            let draw_params = graphics::DrawParam::default()
+                .dest(self.location)
+                .scale(Vector2::new(scalar, scalar));
+            graphics::draw(ctx, image, draw_params)?;
+        } else {
+            // mesh should probably be stored
+            let mesh = graphics::Mesh::new_rectangle(
+                ctx,
+                graphics::DrawMode::fill(),
+                self.as_rect(),
+                self.color,
+            )?;
+
+            graphics::draw(ctx, &mesh, graphics::DrawParam::default())?;
+        }
 
         Ok(())
     }
@@ -122,10 +156,7 @@ impl SquareActor {
                 }
                 Actor::Box => {
                     if self.landed {
-                        self.velocity *= 0.0;
-                        self.velocity.y = 1.0;
-                        self.dying = true;
-                        self.landed = false;
+                        self.set_dying()
                     } else {
                         self.velocity.x *= -1.0;
                     }
@@ -134,13 +165,22 @@ impl SquareActor {
         }
     }
 
+    fn set_dying(&mut self) {
+        if !self.dying {
+            self.velocity *= 0.0;
+            self.velocity.y = 1.0;
+            self.dying = true;
+            self.landed = false;
+        } else if self.dying && self.velocity.y <= 0.0 {
+            self.dying = false;
+            self.set_dying()
+        }
+    }
+
     fn collison_check(&mut self, target: &SquareActor) -> bool {
         if target.as_rect().overlaps(&self.as_rect()) && !target.dying {
             if target.actor_type == Actor::Dropper && self.landed {
-                self.velocity *= 0.0;
-                self.velocity.y = 1.0;
-                self.dying = true;
-                self.landed = false;
+                self.set_dying();
                 return true;
             }
 
@@ -164,21 +204,27 @@ impl StackIt<'_> {
         let (win_w, win_h) = graphics::drawable_size(ctx);
 
         let mut platform = SquareActor::new(Actor::Platform);
-        platform.size.x *= 5.0;
+        platform.size.x *= PLATFORM_WIDTH_MUL;
         platform.location.x = win_w / 2.0 - platform.size.x / 2.0;
         platform.location.y = win_h - platform.size.y;
-        platform.velocity.x = 1.0 * if random.gen::<bool>() { 1.0 } else { -1.0 };
+        platform.velocity.x = coin_flip(&mut random, PLATFORM_SPEED);
         platform.color = random_rgb(&mut random);
 
         let mut dropper = SquareActor::new(Actor::Dropper);
-        dropper.size.x += 5.0;
-        dropper.size.y += 5.0;
+        dropper.size *= DROPPER_SIZE_MUL;
         dropper.location.x = win_w / 2.0 - dropper.size.x / 2.0;
-        dropper.velocity.x = 5.0 * if random.gen::<bool>() { 1.0 } else { -1.0 };
+        dropper.velocity.x = coin_flip(&mut random, DROPPER_SPEED);
         dropper.color = random_rgb(&mut random);
 
         let box_actors: Slab<SquareActor> = Slab::with_capacity(100);
         let box_landed: Slab<SquareActor> = Slab::with_capacity(100);
+
+        let mut box_images = Vec::with_capacity(BOX_IMAGES.len());
+        for img in BOX_IMAGES.iter() {
+            box_images.push(graphics::Image::new(ctx, img).expect(
+                "Images are not in the right place or some are missing! Check the READ.ME!",
+            ));
+        }
 
         StackIt {
             ctx,
@@ -187,6 +233,7 @@ impl StackIt<'_> {
             box_actors,
             box_landed,
             random,
+            box_images,
         }
     }
 
@@ -194,9 +241,15 @@ impl StackIt<'_> {
         let bounds = graphics::drawable_size(self.ctx);
         let bounds = Point2::new(bounds.0, bounds.1);
 
+        // todo: remove this
         graphics::set_window_title(
             self.ctx,
-            format!("FPS: {}", ggez::timer::fps(self.ctx)).as_str(),
+            format!(
+                "FPS: {:.1} Boxes: {}",
+                ggez::timer::fps(self.ctx),
+                self.box_actors.len() + self.box_landed.len()
+            )
+            .as_str(),
         );
 
         self.platform.do_motion();
@@ -243,15 +296,15 @@ impl StackIt<'_> {
         graphics::clear(self.ctx, graphics::BLACK);
 
         for (_idx, box_actor) in self.box_actors.iter() {
-            box_actor.draw(self.ctx)?;
+            box_actor.draw(self.ctx, &self.box_images)?;
         }
 
         for (_idx, landed_box) in self.box_landed.iter() {
-            landed_box.draw(self.ctx)?;
+            landed_box.draw(self.ctx, &self.box_images)?;
         }
 
-        self.platform.draw(self.ctx)?;
-        self.dropper.draw(self.ctx)?;
+        self.platform.draw(self.ctx, &self.box_images)?;
+        self.dropper.draw(self.ctx, &self.box_images)?;
 
         graphics::present(self.ctx)?;
 
@@ -267,17 +320,20 @@ impl StackIt<'_> {
         box_new.velocity = self.dropper.velocity;
         box_new.velocity.y = 2.0;
         box_new.color = random_rgb(&mut self.random);
+        box_new.use_image = true;
+        box_new.image_id = self.random.gen_range(0, self.box_images.len());
 
         self.box_actors.insert(box_new);
     }
 
     fn clear_boxes(&mut self) {
-        self.box_actors.clear();
-        self.box_landed.clear();
+        self.box_actors.iter_mut().for_each(|(_, b)| b.set_dying());
+        self.box_landed.iter_mut().for_each(|(_, b)| b.set_dying());
+        // self.box_actors.clear();
+        // self.box_landed.clear();
     }
 }
 
-// there has to be a better way to do this
 fn center_window(ctx: &mut ggez::Context) {
     let window = graphics::window(ctx);
     let mut pos = window
@@ -290,6 +346,10 @@ fn center_window(ctx: &mut ggez::Context) {
 
 fn random_rgb(rng: &mut rand::rngs::ThreadRng) -> graphics::Color {
     graphics::Color::from_rgb(rng.gen::<u8>(), rng.gen::<u8>(), rng.gen::<u8>())
+}
+
+fn coin_flip(rng: &mut rand::rngs::ThreadRng, val: f32) -> f32 {
+    val * if rng.gen::<bool>() { 1.0 } else { -1.0 }
 }
 
 fn main() -> GameResult {
@@ -332,7 +392,7 @@ fn main() -> GameResult {
                                 .. // scancode: u32, modifiers: ModifiersState
                             },
                         .. // device_id: DeviceId
-                    } if state == ElementState::Released => match keycode {
+                    } if state == ElementState::Pressed => match keycode {
                         event::KeyCode::Escape => event::quit(game.ctx),
                         event::KeyCode::D => { game.spawn_box() },
                         event::KeyCode::C => { game.clear_boxes() },
@@ -342,7 +402,7 @@ fn main() -> GameResult {
                     WindowEvent::MouseInput {
                         button, state,
                         .. // device_id: DeviceID, modifiers: ModifiersState
-                    } if state == ElementState::Released => match button  {
+                    } if state == ElementState::Pressed => match button  {
                         ggez::input::mouse::MouseButton::Left => { game.spawn_box() },
                         _ => { /* Right, Middle, Other(u8) */ },
                     },
@@ -361,7 +421,7 @@ fn main() -> GameResult {
         // Wire in twitch bot and/or other sources of input
 
         // Update
-        while ggez::timer::check_update_time(game.ctx, 60) {
+        while ggez::timer::check_update_time(game.ctx, 30) {
             game.update()?;
         }
 
