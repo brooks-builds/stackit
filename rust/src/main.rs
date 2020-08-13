@@ -4,6 +4,7 @@ use rand::{self, Rng};
 use slab::Slab;
 use std::{thread, time};
 
+// putting some of this here for ease of editing until handled better
 const GAME_NAME: &str = "Stack It!";
 const AUTHOR: &str = "_Bare";
 const SCREEN_WIDTH: f32 = 1920.0; // assumption until we pull it from somewhere, ggez doesn't expose it
@@ -11,6 +12,10 @@ const SCREEN_HEIGHT: f32 = 1080.0;
 const WIN_WIDTH: f32 = SCREEN_WIDTH / 2.0;
 const WIN_HEIGHT: f32 = SCREEN_HEIGHT / 2.0;
 const BASE_UNIT_SIZE: f32 = 16.0;
+const PLATFORM_WIDTH_MUL: f32 = 5.0;
+const PLATFORM_SPEED: f32 = 1.0;
+const DROPPER_SIZE_MUL: f32 = 1.25;
+const DROPPER_SPEED: f32 = 5.0;
 const BOX_IMAGES: [&str; 7] = [
     "/ferris_64.png",
     "/ferris_party_64.png",
@@ -60,7 +65,7 @@ impl SquareActor {
     fn new(actor_type: Actor) -> SquareActor {
         SquareActor {
             actor_type,
-            location: Point2::new(0.0, 0.0), // todo: location & size were a rect, make them a rect again maybe?
+            location: Point2::new(0.0, 0.0),
             size: Point2::new(BASE_UNIT_SIZE, BASE_UNIT_SIZE),
             velocity: Vector2::new(0.0, 0.0),
             color: graphics::Color::from_rgb(255, 255, 255),
@@ -83,7 +88,7 @@ impl SquareActor {
 
     fn do_motion(&mut self) {
         if self.dying {
-            self.velocity *= 1.04;
+            self.velocity *= 1.05;
         }
 
         self.location += self.velocity;
@@ -108,6 +113,7 @@ impl SquareActor {
                 .scale(Vector2::new(scalar, scalar));
             graphics::draw(ctx, image, draw_params)?;
         } else {
+            // mesh should probably be stored
             let mesh = graphics::Mesh::new_rectangle(
                 ctx,
                 graphics::DrawMode::fill(),
@@ -150,10 +156,7 @@ impl SquareActor {
                 }
                 Actor::Box => {
                     if self.landed {
-                        self.velocity *= 0.0;
-                        self.velocity.y = 1.0;
-                        self.dying = true;
-                        self.landed = false;
+                        self.set_dying()
                     } else {
                         self.velocity.x *= -1.0;
                     }
@@ -162,13 +165,22 @@ impl SquareActor {
         }
     }
 
+    fn set_dying(&mut self) {
+        if !self.dying {
+            self.velocity *= 0.0;
+            self.velocity.y = 1.0;
+            self.dying = true;
+            self.landed = false;
+        } else if self.dying && self.velocity.y <= 0.0 {
+            self.dying = false;
+            self.set_dying()
+        }
+    }
+
     fn collison_check(&mut self, target: &SquareActor) -> bool {
         if target.as_rect().overlaps(&self.as_rect()) && !target.dying {
             if target.actor_type == Actor::Dropper && self.landed {
-                self.velocity *= 0.0;
-                self.velocity.y = 1.0;
-                self.dying = true;
-                self.landed = false;
+                self.set_dying();
                 return true;
             }
 
@@ -192,17 +204,16 @@ impl StackIt<'_> {
         let (win_w, win_h) = graphics::drawable_size(ctx);
 
         let mut platform = SquareActor::new(Actor::Platform);
-        platform.size.x *= 5.0;
+        platform.size.x *= PLATFORM_WIDTH_MUL;
         platform.location.x = win_w / 2.0 - platform.size.x / 2.0;
         platform.location.y = win_h - platform.size.y;
-        platform.velocity.x = 1.0 * if random.gen::<bool>() { 1.0 } else { -1.0 };
+        platform.velocity.x = coin_flip(&mut random, PLATFORM_SPEED);
         platform.color = random_rgb(&mut random);
 
         let mut dropper = SquareActor::new(Actor::Dropper);
-        dropper.size.x += 5.0;
-        dropper.size.y += 5.0;
+        dropper.size *= DROPPER_SIZE_MUL;
         dropper.location.x = win_w / 2.0 - dropper.size.x / 2.0;
-        dropper.velocity.x = 5.0 * if random.gen::<bool>() { 1.0 } else { -1.0 };
+        dropper.velocity.x = coin_flip(&mut random, DROPPER_SPEED);
         dropper.color = random_rgb(&mut random);
 
         let box_actors: Slab<SquareActor> = Slab::with_capacity(100);
@@ -210,7 +221,9 @@ impl StackIt<'_> {
 
         let mut box_images = Vec::with_capacity(BOX_IMAGES.len());
         for img in BOX_IMAGES.iter() {
-            box_images.push(graphics::Image::new(ctx, img).unwrap());
+            box_images.push(graphics::Image::new(ctx, img).expect(
+                "Images are not in the right place or some are missing! Check the READ.ME!",
+            ));
         }
 
         StackIt {
@@ -228,9 +241,15 @@ impl StackIt<'_> {
         let bounds = graphics::drawable_size(self.ctx);
         let bounds = Point2::new(bounds.0, bounds.1);
 
+        // todo: remove this
         graphics::set_window_title(
             self.ctx,
-            format!("FPS: {}", ggez::timer::fps(self.ctx)).as_str(),
+            format!(
+                "FPS: {:.1} Boxes: {}",
+                ggez::timer::fps(self.ctx),
+                self.box_actors.len() + self.box_landed.len()
+            )
+            .as_str(),
         );
 
         self.platform.do_motion();
@@ -308,12 +327,13 @@ impl StackIt<'_> {
     }
 
     fn clear_boxes(&mut self) {
-        self.box_actors.clear();
-        self.box_landed.clear();
+        self.box_actors.iter_mut().for_each(|(_, b)| b.set_dying());
+        self.box_landed.iter_mut().for_each(|(_, b)| b.set_dying());
+        // self.box_actors.clear();
+        // self.box_landed.clear();
     }
 }
 
-// there has to be a better way to do this
 fn center_window(ctx: &mut ggez::Context) {
     let window = graphics::window(ctx);
     let mut pos = window
@@ -326,6 +346,10 @@ fn center_window(ctx: &mut ggez::Context) {
 
 fn random_rgb(rng: &mut rand::rngs::ThreadRng) -> graphics::Color {
     graphics::Color::from_rgb(rng.gen::<u8>(), rng.gen::<u8>(), rng.gen::<u8>())
+}
+
+fn coin_flip(rng: &mut rand::rngs::ThreadRng, val: f32) -> f32 {
+    val * if rng.gen::<bool>() { 1.0 } else { -1.0 }
 }
 
 fn main() -> GameResult {
@@ -368,7 +392,7 @@ fn main() -> GameResult {
                                 .. // scancode: u32, modifiers: ModifiersState
                             },
                         .. // device_id: DeviceId
-                    } if state == ElementState::Released => match keycode {
+                    } if state == ElementState::Pressed => match keycode {
                         event::KeyCode::Escape => event::quit(game.ctx),
                         event::KeyCode::D => { game.spawn_box() },
                         event::KeyCode::C => { game.clear_boxes() },
@@ -378,7 +402,7 @@ fn main() -> GameResult {
                     WindowEvent::MouseInput {
                         button, state,
                         .. // device_id: DeviceID, modifiers: ModifiersState
-                    } if state == ElementState::Released => match button  {
+                    } if state == ElementState::Pressed => match button  {
                         ggez::input::mouse::MouseButton::Left => { game.spawn_box() },
                         _ => { /* Right, Middle, Other(u8) */ },
                     },
