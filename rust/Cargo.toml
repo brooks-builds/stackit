@@ -10,3 +10,7 @@ edition = "2018"
 ggez = "0.5.1"
 slab = "0.4.2"
 rand = "0.7.3"
+
+[dependencies.winapi]
+version = "0.3.9"
+features = ["minwindef", "mmsystem", "timeapi"]
