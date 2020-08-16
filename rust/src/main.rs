@@ -11,7 +11,7 @@ const SCREEN_WIDTH: f32 = 1920.0; // assumption until we pull it from somewhere,
 const SCREEN_HEIGHT: f32 = 1080.0;
 const WIN_WIDTH: f32 = SCREEN_WIDTH / 2.0;
 const WIN_HEIGHT: f32 = SCREEN_HEIGHT / 2.0;
-const BASE_UNIT_SIZE: f32 = 16.0;
+const BASE_UNIT_SIZE: f32 = 64.0;
 const PLATFORM_WIDTH_MUL: f32 = 5.0;
 const PLATFORM_SPEED: f32 = 1.0;
 const DROPPER_SIZE_MUL: f32 = 1.25;
@@ -127,7 +127,7 @@ impl SquareActor {
         Ok(())
     }
 
-    fn bounds_check(&mut self, bounds: Point2) {
+    fn bounds_check(&mut self, bounds: Point2) -> bool {
         let mut bounded = false;
 
         if self.location.x < 0.0 {
@@ -146,7 +146,8 @@ impl SquareActor {
             bounded = true;
         } else if self.actor_type == Actor::Box && self.location.y > bounds.y {
             self.velocity *= 0.0;
-            return self.dead = true;
+            self.dead = true;
+            return true;
         };
 
         if bounded && !self.dying {
@@ -163,6 +164,8 @@ impl SquareActor {
                 }
             }
         }
+
+        bounded
     }
 
     fn set_dying(&mut self) {
@@ -238,6 +241,7 @@ impl StackIt<'_> {
     }
 
     fn update(&mut self) -> GameResult {
+        // fixme we get this in new and store it
         let bounds = graphics::drawable_size(self.ctx);
         let bounds = Point2::new(bounds.0, bounds.1);
 
@@ -253,7 +257,7 @@ impl StackIt<'_> {
         );
 
         self.platform.do_motion();
-        self.platform.bounds_check(bounds);
+        let platform_bounded = self.platform.bounds_check(bounds);
 
         self.dropper.do_motion();
         self.dropper.bounds_check(bounds);
@@ -276,7 +280,7 @@ impl StackIt<'_> {
         }
 
         for (_idx, landed_box) in self.box_landed.iter_mut() {
-            if !landed_box.dying {
+            if !landed_box.dying && platform_bounded {
                 landed_box.velocity = self.platform.velocity
             };
 
@@ -284,6 +288,8 @@ impl StackIt<'_> {
             landed_box.bounds_check(bounds);
             landed_box.collison_check(&self.dropper);
         }
+
+        // todo: should we serparate dying out of landed in to their own collection?
 
         self.box_actors
             .retain(|_, v| v.landed == !true && v.dead == !true);
@@ -376,6 +382,7 @@ fn main() -> GameResult {
     // Game loop
     while game.ctx.continuing {
         game.ctx.timer_context.tick();
+        let delta = time::Instant::now();
 
         // Window Events
         events_loop.poll_events(|p_event| {
@@ -421,16 +428,75 @@ fn main() -> GameResult {
         // Wire in twitch bot and/or other sources of input
 
         // Update
-        while ggez::timer::check_update_time(game.ctx, 30) {
-            game.update()?;
-        }
+        // while ggez::timer::check_update_time(game.ctx, 30) {
+        game.update()?;
+        // }
 
         // Render
         game.render()?;
 
         // never accurate sleep, but we just want a cool cpu/gpu
-        thread::sleep(time::Duration::from_nanos(1));
+        // thread::sleep(time::Duration::from_nanos(1));
+        if time::Duration::from_millis(1000 / 60) > delta.elapsed() {
+            let sleep_time = time::Duration::from_millis(1000 / 60) - delta.elapsed();
+            sleepy_timey(sleep_time)
+        }
     }
 
     Ok(())
+}
+
+#[cfg(windows)]
+fn sleepy_timey(sleep_time: time::Duration) {
+    let delta = time::Instant::now();
+
+    use std::mem;
+    use winapi::um::mmsystem::{TIMECAPS, TIMERR_NOERROR};
+    use winapi::um::timeapi::{timeBeginPeriod, timeEndPeriod, timeGetDevCaps};
+
+    let min_slice: winapi::shared::minwindef::UINT = {
+        let timecaps_size = mem::size_of::<TIMECAPS>() as u32;
+        let mut timecaps = TIMECAPS {
+            wPeriodMin: 0,
+            wPeriodMax: 0,
+        };
+
+        if unsafe { timeGetDevCaps(&mut timecaps, timecaps_size) == TIMERR_NOERROR } {
+            timecaps.wPeriodMin
+        } else {
+            1
+        }
+    };
+
+    let resolution = time::Duration::new(0, min_slice * 1000000);
+    dbg!(resolution);
+
+    if sleep_time > resolution {
+        unsafe {
+            timeBeginPeriod(min_slice);
+        }
+        thread::sleep(sleep_time - resolution);
+        unsafe {
+            timeEndPeriod(min_slice);
+        }
+    }
+
+    while delta.elapsed() < sleep_time {
+        thread::yield_now();
+    }
+}
+
+#[cfg(not(windows))]
+fn sleepy_timey(sleep_time: std::time::Duration) {
+    let delta = time::Instant::now();
+
+    let resolution = time::Duration::new(0, 125_000);
+
+    if sleep_time > resolution {
+        thread::sleep(sleep_time - resolution);
+    }
+
+    while delta.elapsed() < sleep_time {
+        thread::yield_now();
+    }
 }
