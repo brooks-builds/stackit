@@ -469,7 +469,7 @@ fn sleepy_timey(sleep_time: time::Duration) {
     };
 
     let resolution = time::Duration::new(0, min_slice * 1000000);
-    dbg!(resolution);
+    // dbg!(resolution);
 
     if sleep_time > resolution {
         unsafe {
