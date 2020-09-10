@@ -28,11 +28,11 @@ function setup() {
     }
 
     fallingBoxes.push(
-      new Box(
+      Box(
         boxDropper.location.copy(),
         boxDropper.velocity.copy(),
         data.username,
-        data.color
+        check_dark_color(data.color)
       )
     );
   };
@@ -95,13 +95,23 @@ function mouseClicked() {
       boxDropper.location.copy(),
       boxDropper.velocity.copy(),
       test_username,
-      random_rgb_color()
+      check_dark_color(random_rgb_color())
     )
   );
 }
 
 function random_rgb_color() {
   return color(random(256), random(256), random(256));
+}
+
+function check_dark_color(color) {
+  if (red(color) < 128 && green(color) < 128 && blue(color) < 128) {
+    color.setRed(128);
+    color.setGreen(128);
+    color.setBlue(128);
+  }
+
+  return color;
 }
 
 function windowResized() {
