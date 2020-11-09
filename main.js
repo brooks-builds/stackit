@@ -28,11 +28,11 @@ function setup() {
     }
 
     fallingBoxes.push(
-      Box(
+      new Box(
         boxDropper.location.copy(),
         boxDropper.velocity.copy(),
         data.username,
-        check_dark_color(data.color)
+        check_dark_color(color(data.color))
       )
     );
   };
